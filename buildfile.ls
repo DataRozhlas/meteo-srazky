@@ -11,7 +11,7 @@ externalData =
   "precips": "#__dirname/data/precips.tsv"
 
 preferScripts = <[ utils.js postInit.js _loadData.js ../data.js init.js _loadExternal.js ]>
-deferScripts = <[ MeteoCorrelator.js CorrLedenCerven.js geoUtils.js base.js ]>
+deferScripts = <[geoUtils.js base.js ]>
 develOnlyScripts = <[ _loadData.js _loadExternal.js]>
 gzippable = <[ www/index.deploy.html www/script.deploy.js ]>
 safe-deployable =
@@ -47,7 +47,7 @@ prepare-stylus = (file, options, cb) ->
   cb null css
 
 build-script = (file, cb) ->
-  require! child_process.exec
+  require! child_process:{exec}
   (err, result) <~ exec "lsc -o #__dirname/www/js -c #__dirname/#file"
   if err
     console.error err
@@ -55,7 +55,7 @@ build-script = (file, cb) ->
 
 build-all-scripts = (cb) ->
   console.log "Building scripts..."
-  require! child_process.exec
+  require! child_process:{exec}
   (err, result) <~ exec "lsc -o #__dirname/www/js -c #__dirname/www/ls"
   throw err if err
   console.log "Scripts built"
@@ -97,7 +97,7 @@ download-external-styles = (cb) ->
 
 combine-scripts = (options = {}, cb) ->
   console.log "Combining scripts..."
-  require! uglify: "uglify-js"
+  require! "uglify-js":uglify
   (err, files) <~ fs.readdir "#__dirname/www/js"
   files .= filter -> it isnt 'script.js.map'
   if options.compression
@@ -143,13 +143,13 @@ combine-scripts = (options = {}, cb) ->
   cb? err
 
 run-script = (file) ->
-  require! child_process.exec
+  require! child_process:{exec}
   (err, stdout, stderr) <~ exec "lsc #__dirname/#file"
   console.error stderr if stderr
   console.log stdout
 
 test-script = (file) ->
-  require! child_process.exec
+  require! child_process:{exec}
   [srcOrTest, ...fileAddress] = file.split /[\\\/]/
   fileAddress .= join '/'
   <~ build-all-server-scripts
@@ -158,7 +158,7 @@ test-script = (file) ->
   niceTestOutput stdout, stderr, cmd
 
 build-all-server-scripts = (cb) ->
-  require! child_process.exec
+  require! child_process:{exec}
   (err, stdout, stderr) <~ exec "lsc -o #__dirname/lib -c #__dirname/src"
   throw stderr if stderr
   cb? err
@@ -171,7 +171,7 @@ relativizeFilename = (file) ->
   file .= substr 1
 
 gzip-files = (cb) ->
-  require! child_process.exec
+  require! child_process:{exec}
   console.log "Zopfli-ing..."
   (err, stdout, stderr) <~ exec "zopfli #{gzippable.join ' '}"
   console.log "Zopflied"
@@ -199,8 +199,8 @@ deploy-files = (cb) ->
   cb?!
 
 inject-index = (cb) ->
-  require! child_process.exec
-  require! htmlmin: 'html-minifier'
+  require! child_process:{exec}
+  require! 'html-minifier':htmlmin
   files =
     "#__dirname/www/_index.html"
     "#__dirname/www/script.deploy.js"
@@ -208,7 +208,7 @@ inject-index = (cb) ->
   (err, [index, script, style]) <~ async.map files, fs.readFile
   console.log err if err
   index .= toString!
-  index .= replace '<script src="script.js" charset="utf-8" async></script>', "<script>#{script.toString!}</script>"
+  index .= replace '<script src="script.js" charset="utf-8" async></script>', -> "<script>#{script.toString!}</script>"
   index .= replace '<link rel="stylesheet" href="screen.css">', "<style>#{style.toString!}</style>"
   index += '<script src="https://samizdat.cz/tools/analytics/0.0.1.js" charset="utf-8" async></script>'
   htmlminConfig =
@@ -266,13 +266,13 @@ switch task
   combine-scripts compression: no
 
 | \deploy
+  <~ build-styles compression: yes deploy: yes
   <~ async.parallel do
     * download-external-scripts
       download-external-data
       download-external-styles
       # build-all-server-scripts!
       # refresh-manifest!
-  <~ build-styles compression: yes deploy: yes
   <~ build-all-scripts
   <~ combine-scripts compression: yes deploy: yes
   <~ inject-index!
