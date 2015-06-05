@@ -1,4 +1,7 @@
 isAverage = window.location.hash == '#average'
+binScale = d3.scale.linear!
+  ..domain [0 93]
+  ..range [0 90]
 ig.drawPrecips = ->
   years = [0 to 210].map (d, i) ->
     year = i + 1804
@@ -23,20 +26,23 @@ ig.drawPrecips = ->
     threeDayPrecips.sort (a, b) -> a.precip - b.precip
     binnedPrecips = [0 to 90].map -> 0
     for {precip} in threeDayPrecips
-      bin = Math.round 10 * Math.sqrt precip
+      bin = Math.round binScale precip
+      if precip > 80
+        console.log bin
+        console.log precip
       if bin > 0 => bin -= 2
       unless isNaN bin
         binnedPrecips[bin] += 1
     {precips:threeDayPrecips, index, binnedPrecips}
 
   color = d3.scale.quantize!
-    ..range ['rgb(247,251,255)','rgb(222,235,247)','rgb(198,219,239)','rgb(158,202,225)','rgb(107,174,214)','rgb(66,146,198)','rgb(33,113,181)','rgb(8,81,156)','rgb(8,48,107)']
+    ..range ['rgb(222,235,247)','rgb(198,219,239)','rgb(158,202,225)','rgb(107,174,214)','rgb(66,146,198)','rgb(33,113,181)','rgb(8,81,156)','rgb(8,48,107)']
 
   zeroColor = d3.scale.quantize!
     ..range ['rgb(255,255,204)','rgb(255,237,160)','rgb(254,217,118)','rgb(254,178,76)','rgb(253,141,60)','rgb(252,78,42)','rgb(227,26,28)','rgb(189,0,38)','rgb(128,0,38)']
     ..domain d3.extent cols.map (.binnedPrecips.0)
 
-  y = 91
+  y = 88
   x = 122
 
   pointRadius = 8
@@ -58,6 +64,17 @@ ig.drawPrecips = ->
         4
 
   unless isAverage
+    yAxis = container.append \div
+      ..attr \class "axis y"
+      ..selectAll \div.item .data [0 20 40 60 80] .enter!append \div
+        ..attr \class \item
+        ..style \top ->
+          if it
+            "#{yScale binScale it - 3}px"
+          else
+            "0px"
+        ..html ->
+          if it then "#it mm" else "0"
     canvas = container.append \canvas
       ..attr \width "#{width}px"
       ..attr \height "#{height}px"
@@ -82,6 +99,7 @@ ig.drawPrecips = ->
           zeroColor count
         ctx.arc cx, cy, pointRadius / 2 - 0.5, 0, 2 * Math.PI
         ctx.fill!
+    drawLegends container
   drawOverlay container, width, height, cols, yScale
   months =
     * length: 31
@@ -122,7 +140,7 @@ ig.drawPrecips = ->
       ..x (d, i) -> (i + 0.5) * (pointRadius / 3)
       ..y (d) ->
         if d
-          1 + yScale (-2 + Math.round 10 * Math.sqrt d)
+          yScale binScale d - 2
         else
           yScale d
     path = svg.append \path
@@ -202,4 +220,14 @@ drawOverlay = (container, width, height, cols, yScale) ->
         ..html ->
           day = it.precips[*-1]
           "Nejvíc srážek spadlo #{toHumanDate day.day, day.year}<br>#{ig.utils.formatNumber day.precip, 1} mm"
-        ..style \top -> "#{1 + yScale (-2 + Math.round 10 * Math.sqrt it.precips[*-1].precip)}px"
+        ..style \top -> "#{-13 + yScale (binScale it.precips[*-1].precip)}px"
+
+drawLegends = (container) ->
+  element = container.append \div
+    ..attr \class \legend
+    ..append \ul
+      ..append \li .html "Obvykle prší"
+      ..append \li .html "Obvykle neprší"
+    ..append \ul
+      ..append \li .html "Běžné množství srážek"
+      ..append \li .html "Extrémní srážky"

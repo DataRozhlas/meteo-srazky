@@ -23,6 +23,7 @@
     left 0px
     width 20px
     z-index 1
+    font-variant small-caps
     .item
       position absolute
       left 0px
@@ -33,7 +34,7 @@
       &:after
         position absolute
         content " "
-        top 4px
+        top 11px
         left 23px
         width 976px
         border-bottom 1px solid lighten(black, 92%)
@@ -112,7 +113,7 @@
     opacity 0.1
   .year-axis
     position absolute
-    top 730px
+    top 685px
     left 23px
     h2
       font-weight normal
@@ -120,6 +121,7 @@
       font-size 16px
       font-variant small-caps
       margin-bottom 10px
+      text-align right
     ol
       list-style-type none
       margin 0px
@@ -173,5 +175,41 @@
         background transparent
         border-left 1px solid #f0
         border-right 1px solid #f0
+
+
+  .legend
+    position absolute
+    left 25px
+    top 480px
+    font-variant small-caps
+    padding 11px
+    border 1px dashed #d6
+    ul
+      margin 0px
+      padding 0px
+      list-style-type none
+      li
+        padding 0px
+        position relative
+        padding-left 17px
+        &:before
+          position absolute
+          top 6px
+          left 0px
+          content " "
+          border-radius 50%
+          width 6px
+          height 6px
+      &:first-of-type
+        margin-bottom 10px
+        li:first-of-type:before
+          background rgb(254,217,118)
+        li:last-of-type:before
+          background rgb(189,0,38)
+      &:last-of-type
+        li:first-of-type:before
+          background rgb(8,81,156)
+        li:last-of-type:before
+          background rgb(198,219,239)
 
 
