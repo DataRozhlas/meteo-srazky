@@ -27,9 +27,6 @@ ig.drawPrecips = ->
     binnedPrecips = [0 to 90].map -> 0
     for {precip} in threeDayPrecips
       bin = Math.round binScale precip
-      if precip > 80
-        console.log bin
-        console.log precip
       if bin > 0 => bin -= 2
       unless isNaN bin
         binnedPrecips[bin] += 1
