@@ -53,7 +53,8 @@ ig.drawPrecips = ->
     ..classed \average isAverage
   yScale = ->
     if isAverage
-      height - it * 10
+      it += 3
+      height - it * 40
     else
       if it
         it * pointRadius + 6
