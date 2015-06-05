@@ -54,7 +54,7 @@ ig.drawPrecips = ->
   yScale = ->
     if isAverage
       it += 3
-      height - it * 40
+      height - it * 36
     else
       if it
         it * pointRadius + 6
