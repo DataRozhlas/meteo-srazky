@@ -1,3 +1,4 @@
+isAverage = window.location.hash == '#average'
 ig.drawPrecips = ->
   years = [0 to 210].map (d, i) ->
     year = i + 1804
@@ -42,37 +43,45 @@ ig.drawPrecips = ->
 
   width = x * pointRadius
   height = y * pointRadius
-
+  if isAverage
+    height = 150
   container = d3.select ig.containers.base
     ..classed \precip yes
-  canvas = container.append \canvas
-    ..attr \width "#{width}px"
-    ..attr \height "#{height}px"
-    ..style \margin-left \23px
-
-  ctx = canvas.node!getContext \2d
+    ..classed \average isAverage
   yScale = ->
-    if it
-      it * pointRadius + 6
+    if isAverage
+      height - it * 10
     else
-      4
-
-  for col, xIndex in cols
-    cx = xIndex * pointRadius + 4
-    color.domain d3.extent col.binnedPrecips.slice 1
-    for count, yIndex in col.binnedPrecips
-      continue unless count
-      cy = yScale yIndex
-      ctx.beginPath!
-      if xIndex == 121
-        count = count * 633 / 422
-      ctx.fillStyle = if yIndex
-        cy += 1
-        color count
+      if it
+        it * pointRadius + 6
       else
-        zeroColor count
-      ctx.arc cx, cy, pointRadius / 2 - 0.5, 0, 2 * Math.PI
-      ctx.fill!
+        4
+
+  unless isAverage
+    canvas = container.append \canvas
+      ..attr \width "#{width}px"
+      ..attr \height "#{height}px"
+      ..style \margin-left \23px
+
+    ctx = canvas.node!getContext \2d
+
+
+    for col, xIndex in cols
+      cx = xIndex * pointRadius + 4
+      color.domain d3.extent col.binnedPrecips.slice 1
+      for count, yIndex in col.binnedPrecips
+        continue unless count
+        cy = yScale yIndex
+        ctx.beginPath!
+        if xIndex == 121
+          count = count * 633 / 422
+        ctx.fillStyle = if yIndex
+          cy += 1
+          color count
+        else
+          zeroColor count
+        ctx.arc cx, cy, pointRadius / 2 - 0.5, 0, 2 * Math.PI
+        ctx.fill!
   drawOverlay container, width, height, cols, yScale
   months =
     * length: 31
@@ -117,26 +126,38 @@ ig.drawPrecips = ->
         else
           yScale d
     path = svg.append \path
-    yearAxis = container.append \div
-      ..attr \class \year-axis
-      ..append \h2
-        ..html "Vyberte rok, jehož srážky chcete zobrazit"
-      ..append \ol
-        ..selectAll \li .data years .enter!append \li
-          ..classed \left (d, i) -> i > 204
-          ..append \span
-            ..html (d, i) -> d.year
-          ..filter ((d, i) -> 6 == i % 20)
-            ..classed \big yes
-          ..on \mouseover (d, i) -> drawYear i
-          ..on \touchstart (d, i) -> drawYear i
-          ..on \mouseout -> undrawYear!
+    unless isAverage
+      yearAxis = container.append \div
+        ..attr \class \year-axis
+        ..append \h2
+          ..html "Vyberte rok, jehož srážky chcete zobrazit"
+        ..append \ol
+          ..selectAll \li .data years .enter!append \li
+            ..classed \left (d, i) -> i > 204
+            ..append \span
+              ..html (d, i) -> d.year
+            ..filter ((d, i) -> 6 == i % 20)
+              ..classed \big yes
+            ..on \mouseover (d, i) -> drawYear i
+            ..on \touchstart (d, i) -> drawYear i
+            ..on \mouseout -> undrawYear!
 
     drawYear = (yearIndex) ->
       path.attr \d line years[yearIndex].data
 
+    drawAverageYear = ->
+      data = years.0.data.map -> 0
+      l = years.length
+      for year in years
+        for datum, index in year.data
+          data[index] += (datum || 0) / l
+      path.attr \d line data
+
+
     undrawYear = ->
       path.attr \d ""
+    if isAverage
+      drawAverageYear!
 
   drawOneYear!
 
@@ -145,13 +166,17 @@ drawOverlay = (container, width, height, cols, yScale) ->
   date = new Date!
     ..setHours 12
 
-  toHumanDate = (dayIndex, year) ->
+  toHumanDate = (dayIndex, year, short = no) ->
     startDay = dayIndex + 1
     date
       ..setMonth 0
       ..setDate startDay
       ..setFullYear year
-    "#{date.getDate!}. #{date.getMonth! + 1}. #{date.getFullYear!}"
+    if short
+      "#{date.getDate!}. #{date.getMonth! + 1}"
+    else
+      "#{date.getDate!}. #{date.getMonth! + 1}. #{date.getFullYear!}"
+
   monthContainer = container.append \div
     ..attr \class \monthContainer
     ..style \width "#{width}px"
@@ -162,7 +187,15 @@ drawOverlay = (container, width, height, cols, yScale) ->
         ..attr \class "temp min"
         ..html ->
           day = it.precips.0
-          "Prší v #{ig.utils.formatNumber (1 - it.binnedPrecips[0] / it.precips.length) * 100} % dnů"
+          if isAverage
+            sum = 0
+            for precip in it.precips
+              sum += precip.precip || 0
+            avg = sum / it.precips.length
+            "#{toHumanDate day.day, day.year, yes} – #{toHumanDate day.day + 2, day.year, yes}<br>
+            Průměrné srážky #{ig.utils.formatNumber avg, 2} mm"
+          else
+            "Prší v #{ig.utils.formatNumber (1 - it.binnedPrecips[0] / it.precips.length) * 100} % dnů"
         ..style \top "#{yScale 0}px"
       ..append \div
         ..attr \class "temp max"
