@@ -8,3 +8,25 @@
 .ig
   &.precip
     @import precip
+  .year-part
+    position absolute
+    font-variant small-caps
+    text-transform uppercase
+    z-index 5
+    pointer-events none
+    font-size 10px
+    &:before
+      content " "
+      position absolute
+      border-top 1px dotted #a
+      border-left 1px solid #a
+      height 3px
+      top 8px
+      left -17px
+    &.medard
+      top -17px
+      left 460px
+      &:before
+        width 12px
+  .monthContainer:hover ~ .year-part
+    opacity 0.1
